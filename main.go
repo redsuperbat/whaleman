@@ -39,6 +39,16 @@ func filesEqual(b *[]byte, b2 *[]byte) bool {
 	return bytes.Equal(*b, *b2)
 }
 
+func removeEmpty(s []string) []string {
+	var r []string
+	for _, str := range s {
+		if str != "" {
+			r = append(r, str)
+		}
+	}
+	return r
+}
+
 func checkFile(url string) {
 	b := downloadGithubFile(url)
 	b2, err := ioutil.ReadFile(COMPOSE_FILE)
@@ -60,7 +70,8 @@ func checkFile(url string) {
 }
 
 func getUrls() []string {
-	urls := strings.Split(os.Getenv("GH_COMPOSE_FILES"), ",")
+	urls := removeEmpty(strings.Split(os.Getenv("GH_COMPOSE_FILES"), ","))
+	log.Println("Urls: ", urls)
 	if len(urls) == 0 {
 		log.Fatalln("Please supply the env variable GH_COMPOSE_FILES")
 	}
