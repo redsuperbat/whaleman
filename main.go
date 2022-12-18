@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
@@ -101,11 +102,21 @@ func checkFile(url string) error {
 	log.Println("Trying to restart docker applications")
 	cmd := exec.Command("docker-compose", "-f", filepath, "up", "-d")
 	log.Println("Running command with args: ", cmd.Args)
-	out, err := cmd.CombinedOutput()
+	cmdReader, err := cmd.StdoutPipe()
+	cmd.Stderr = cmd.Stdout
 	if err != nil {
 		return err
 	}
-	log.Println(string(out))
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	scanner := bufio.NewScanner(cmdReader)
+	scanner.Split(bufio.ScanWords)
+	for scanner.Scan() {
+		m := scanner.Text()
+		log.Println(m)
+	}
+	cmd.Wait()
 	return nil
 }
 
