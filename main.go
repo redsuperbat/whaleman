@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -150,8 +151,19 @@ func checkFiles() {
 }
 
 func startPoll() {
-	log.Println("Setting up ticker")
-	ticker := time.NewTicker(time.Minute * 2)
+	pollInterval := os.Getenv("POLLING_INTERVAL_MIN")
+	if pollInterval == "" {
+		log.Println("Polling disabled")
+		return
+	}
+
+	log.Println("Polling enabled polling every", pollInterval, "minutes")
+	interval, err := strconv.Atoi(pollInterval)
+	if err != nil {
+		log.Panicln(err)
+	}
+
+	ticker := time.NewTicker(time.Minute * time.Duration(interval))
 	for {
 		select {
 		case <-ticker.C:
