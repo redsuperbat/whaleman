@@ -10,4 +10,3 @@ services:
       - 8090:8090
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - /usr/max/home/whaleman/data:/var/lib/whaleman
