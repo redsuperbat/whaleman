@@ -62,6 +62,7 @@ func toFilename(url string) string {
 func readCache(url string) []byte {
 	filepath := toFilename(url)
 	b, err := ioutil.ReadFile(filepath)
+
 	if os.IsNotExist(err) {
 		log.Println("File did not exist. Creating an empty one to start with")
 		log.Println("Ensuring", DATA_DIR, "exists.")
@@ -75,9 +76,12 @@ func readCache(url string) []byte {
 			log.Fatalln(err)
 		}
 		return initBytes
-	} else {
+	}
+
+	if err != nil {
 		log.Fatalln(err)
 	}
+
 	return b
 }
 
