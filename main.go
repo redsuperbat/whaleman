@@ -88,7 +88,8 @@ func main() {
 	http.HandleFunc("/handle-changes", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Received request to check files")
 		checkFiles()
+		io.WriteString(w, "Thanks for your request")
 	})
 	log.Println("Server started on port", port)
-	http.ListenAndServe(port, nil)
+	log.Fatalln(http.ListenAndServe(port, nil))
 }
