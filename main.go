@@ -99,7 +99,7 @@ func checkFile(url string) error {
 	}
 
 	log.Println("Trying to restart docker applications")
-	cmd := exec.Command("docker-compose", "up", "-f", filepath, "-d")
+	cmd := exec.Command("docker-compose", "-f", filepath, "up", "-d")
 	log.Println("Running command with args: ", cmd.Args)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
