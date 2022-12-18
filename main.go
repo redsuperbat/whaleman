@@ -84,10 +84,11 @@ func checkFiles() {
 }
 
 func main() {
+	port := ":8090"
 	http.HandleFunc("/handle-changes", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Received request to check files")
 		checkFiles()
 	})
-	log.Println("Started server")
-	http.ListenAndServe(":8090", nil)
+	log.Println("Server started on port", port)
+	http.ListenAndServe(port, nil)
 }
