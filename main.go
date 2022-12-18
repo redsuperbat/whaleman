@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+	"time"
 )
 
 const (
@@ -148,6 +149,17 @@ func checkFiles() {
 	}
 }
 
+func startPoll() {
+	log.Println("Setting up ticker")
+	ticker := time.NewTicker(time.Minute * 2)
+	for {
+		select {
+		case <-ticker.C:
+			checkFiles()
+		}
+	}
+}
+
 func main() {
 	port := ":8090"
 	log.Println("Registered handler for path {/}")
@@ -157,5 +169,6 @@ func main() {
 		io.WriteString(w, "Thanks for your request")
 	})
 	log.Println("Server started on port", port)
+	go startPoll()
 	log.Fatalln(http.ListenAndServe(port, nil))
 }
