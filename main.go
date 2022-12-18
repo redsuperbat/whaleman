@@ -85,24 +85,25 @@ func readCache(url string) []byte {
 	return b
 }
 
-func checkFile(url string) {
+func checkFile(url string) error {
 	b := downloadGithubFile(url)
 	b2 := readCache(url)
 	if filesEqual(&b, &b2) {
 		log.Println("Remote files match local cache.")
-		return
+		return nil
 	}
 	log.Println("Mismatch against local cache. Updating cache.")
 	filepath := toFilename(url)
 	if err := ioutil.WriteFile(filepath, b, 0644); err != nil {
-		log.Fatalln(err)
+		return err
 	}
 
 	log.Println("Executing command to restart affected application")
 	cmd := exec.Command("docker-compose", "restart", "-f", filepath)
 	if err := cmd.Run(); err != nil {
-		log.Fatalln(err)
+		return err
 	}
+	return nil
 }
 
 func getUrls() []string {
@@ -124,7 +125,10 @@ func checkFiles() {
 		// Run every url request in parallell
 		log.Println("Checking file", url)
 		go func() {
-			checkFile(u)
+			err := checkFile(u)
+			if err != nil {
+				log.Println(err)
+			}
 			wg.Done()
 		}()
 	}
