@@ -116,6 +116,7 @@ func checkFile(url string) error {
 		log.Println(m)
 	}
 	cmd.Wait()
+	log.Println("Updated docker containers.")
 	return nil
 }
 
