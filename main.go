@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"crypto/md5"
+	"encoding/hex"
 	"io"
 	"io/ioutil"
 	"log"
@@ -13,8 +15,7 @@ import (
 )
 
 const (
-	DATA_DIR     = "/var/lib/whaleman"
-	COMPOSE_FILE = DATA_DIR + "/compose-file"
+	DATA_DIR = "/var/lib/whaleman"
 )
 
 func downloadGithubFile(url string) []byte {
@@ -49,24 +50,44 @@ func removeEmpty(s []string) []string {
 	return r
 }
 
-func checkFile(url string) {
-	b := downloadGithubFile(url)
-	b2, err := ioutil.ReadFile(COMPOSE_FILE)
+func toMD5Hash(text string) string {
+	hash := md5.Sum([]byte(text))
+	return hex.EncodeToString(hash[:])
+}
+
+func toFilename(url string) string {
+	return DATA_DIR + "/" + toMD5Hash(url)
+}
+
+func readCache(url string) []byte {
+	filepath := toFilename(url)
+	b, err := ioutil.ReadFile(filepath)
 	if err != nil {
+		f, err := os.Create(filepath)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		defer f.Close()
 		log.Fatalln(err)
 	}
+	return b
+}
 
+func checkFile(url string) {
+	b := downloadGithubFile(url)
+	b2 := readCache(url)
 	if filesEqual(&b, &b2) {
 		log.Println("Remote files match local cache.")
 		return
 	}
 	log.Println("Mismatch against local cache. Updating cache.")
-	if err = ioutil.WriteFile(COMPOSE_FILE, b, 0644); err != nil {
+	filepath := toFilename(url)
+	if err := ioutil.WriteFile(filepath, b, 0644); err != nil {
 		log.Fatalln(err)
 	}
 
 	log.Println("Executing command to restart affected application")
-	exec.Command("docker-compose", "restart", "-f", COMPOSE_FILE)
+	exec.Command("docker-compose", "restart", "-f", filepath)
 }
 
 func getUrls() []string {
