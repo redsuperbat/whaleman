@@ -8,11 +8,7 @@ COPY . .
 
 RUN go build
 
-FROM docker/compose:latest
-
-RUN wget https://github.com/docker/compose/releases/download/1.24.0/run.sh -O /usr/local/bin/docker-compose
-
-RUN chmod +x /usr/local/bin/docker-compose
+FROM linuxserver/docker-compose:1.29.2-alpine
 
 WORKDIR /app/prod
 
