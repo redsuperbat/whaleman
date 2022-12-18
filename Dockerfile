@@ -8,7 +8,7 @@ COPY . .
 
 RUN go build
 
-FROM docker:cli
+FROM docker/compose:latest
 
 RUN wget https://github.com/docker/compose/releases/download/1.24.0/run.sh -O /usr/local/bin/docker-compose
 
