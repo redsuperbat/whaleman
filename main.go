@@ -85,7 +85,8 @@ func checkFiles() {
 
 func main() {
 	port := ":8090"
-	http.HandleFunc("/handle-changes", func(w http.ResponseWriter, r *http.Request) {
+	log.Println("Registered handler for path {/}")
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Received request to check files")
 		checkFiles()
 		io.WriteString(w, "Thanks for your request")
