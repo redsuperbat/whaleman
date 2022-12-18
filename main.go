@@ -10,8 +10,6 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
-
-	"github.com/joho/godotenv"
 )
 
 const (
@@ -98,10 +96,6 @@ func checkFiles() {
 
 func main() {
 	port := ":8090"
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalln("Error loading .env file:", err)
-	}
 	log.Println("Registered handler for path {/}")
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Received request to check files")
