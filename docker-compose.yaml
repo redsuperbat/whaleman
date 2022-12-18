@@ -1,0 +1,14 @@
+version: "2"
+
+services:
+  portainer:
+    image: maxrsb/whaleman:latest
+    restart: unless-stopped
+    environment:
+      - GH_COMPOSE_FILES=
+      - GH_PAT=
+    ports:
+      - 8000:8000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/max/home/whaleman/data:/var/lib/whaleman
