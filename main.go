@@ -111,7 +111,6 @@ func checkFile(url string) error {
 		return err
 	}
 	scanner := bufio.NewScanner(cmdReader)
-	scanner.Split(bufio.ScanWords)
 	for scanner.Scan() {
 		m := scanner.Text()
 		log.Println(m)
