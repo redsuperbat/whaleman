@@ -163,6 +163,7 @@ func checkFiles() {
 			wg.Done()
 		}()
 	}
+	wg.Wait()
 }
 
 func startPoll() {
@@ -193,7 +194,8 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Received request to check files")
 		checkFiles()
-		io.WriteString(w, "Thanks for your request")
+		w.Header().Add("Content-Type", "application/json")
+		io.WriteString(w, "{\"message\":\"Refreshed!\"}")
 	})
 	log.Println("Server started on port", port)
 	go startPoll()
