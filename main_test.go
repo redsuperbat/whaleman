@@ -15,3 +15,11 @@ func TestFilesEqual(t *testing.T) {
 	res = filesEqual(&b, &b)
 	assert.Equal(t, true, res)
 }
+
+func TestSumChars(t *testing.T) {
+	hash1 := "d286fa96053d0b18502c1b8ea77420c6"
+	hash2 := "713de9f13e306102417c2930dc928e43"
+	res1 := sumChars(hash1)
+	res2 := sumChars(hash2)
+	assert.NotEqual(t, res1, res2)
+}

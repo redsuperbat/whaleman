@@ -62,8 +62,8 @@ func toMD5Hash(text string) string {
 
 func sumChars(str string) int64 {
 	sum := 0
-	for char := range str {
-		sum += char
+	for _, char := range str {
+		sum += int(char)
 	}
 	return int64(sum)
 }
