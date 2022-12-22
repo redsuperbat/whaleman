@@ -15,6 +15,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/brianvoe/gofakeit/v6"
 )
 
 const (
@@ -56,6 +58,14 @@ func removeEmpty(s []string) []string {
 func toMD5Hash(text string) string {
 	hash := md5.Sum([]byte(text))
 	return hex.EncodeToString(hash[:])
+}
+
+func sumChars(str string) int64 {
+	sum := 0
+	for char := range str {
+		sum += char
+	}
+	return int64(sum)
 }
 
 func toFilename(url string) string {
@@ -102,7 +112,12 @@ func checkFile(url string) error {
 	}
 
 	log.Println("Trying to restart docker applications")
-	cmd := exec.Command("docker-compose", "-f", filepath, "up", "-d")
+	seed := sumChars(toMD5Hash(url))
+	faker := gofakeit.New(seed)
+	project := faker.Adjective() + "-" + faker.Animal()
+	projLow := strings.ToLower(project)
+	log.Println("Project", projLow, "generated")
+	cmd := exec.Command("docker-compose", "-f", filepath, "-p", projLow, "up", "-d")
 	log.Println("Running command with args: ", cmd.Args)
 	cmdReader, err := cmd.StdoutPipe()
 	cmd.Stderr = cmd.Stdout
