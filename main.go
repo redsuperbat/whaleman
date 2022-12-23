@@ -163,7 +163,6 @@ func checkFiles() {
 			wg.Done()
 		}()
 	}
-	wg.Wait()
 }
 
 func startPoll() {
