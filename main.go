@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"io"
 	"io/ioutil"
 	"log"
@@ -113,9 +114,6 @@ func checkFile(url string) error {
 	}
 	log.Println("Mismatch against local cache. Updating cache.")
 	filepath := toFilename(url)
-	if err := ioutil.WriteFile(filepath, b, 0644); err != nil {
-		return err
-	}
 
 	log.Println("Trying to restart docker applications")
 	seed := sumChars(toMD5Hash(url))
@@ -139,6 +137,12 @@ func checkFile(url string) error {
 		log.Println(m)
 	}
 	cmd.Wait()
+	if cmd.ProcessState.ExitCode() == 1 {
+		return errors.New("Unable to update docker containers")
+	}
+	if err := ioutil.WriteFile(filepath, b, 0644); err != nil {
+		return err
+	}
 	log.Println("Updated docker containers.")
 	return nil
 }
