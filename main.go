@@ -23,22 +23,25 @@ const (
 	DATA_DIR = "/var/lib/whaleman"
 )
 
-func downloadGithubFile(url string) []byte {
+func downloadGithubFile(url string) ([]byte, error) {
 	ghToken := os.Getenv("GH_PAT")
 	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
 	request.Header.Add("Authorization", "token "+ghToken)
 	request.Header.Add("Accept", "application/vnd.github.v3.raw")
 	client := http.Client{}
 	response, err := client.Do(request)
 	if err != nil {
-		log.Fatalln(err)
+		return nil, err
 	}
 
 	b, err := io.ReadAll(response.Body)
 	if err != nil {
-		log.Fatalln(err)
+		return nil, err
 	}
-	return b
+	return b, nil
 }
 
 func filesEqual(b *[]byte, b2 *[]byte) bool {
@@ -99,7 +102,10 @@ func readCache(url string) []byte {
 }
 
 func checkFile(url string) error {
-	b := downloadGithubFile(url)
+	b, err := downloadGithubFile(url)
+	if err != nil {
+		return err
+	}
 	b2 := readCache(url)
 	if filesEqual(&b, &b2) {
 		log.Println("Remote files match local cache.")
