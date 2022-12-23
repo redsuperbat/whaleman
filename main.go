@@ -158,7 +158,7 @@ func checkFiles() {
 	wg.Add(len(urls))
 
 	for _, url := range urls {
-		u := url
+		u := strings.TrimSpace(url)
 		// Run every url request in parallell
 		log.Println("Checking file", url)
 		go func() {
