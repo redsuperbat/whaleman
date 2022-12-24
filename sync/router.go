@@ -19,6 +19,7 @@ import (
 	"github.com/kataras/golog"
 	"github.com/kataras/iris/v12"
 	"github.com/redsuperbat/whaleman/data"
+	"github.com/redsuperbat/whaleman/slices"
 )
 
 type Msg struct {
@@ -97,7 +98,7 @@ func checkFile(log *golog.Logger, url string) error {
 	seed := sumChars(toMD5Hash(url))
 	faker := gofakeit.New(seed)
 	project := strings.ToLower(faker.Adjective() + "-" + faker.Animal())
-	log.Info("Project", project, "generated")
+	log.Info("Project ", project, " generated")
 	cmd := exec.Command("docker-compose", "-f", filepath, "-p", project, "up", "-d")
 	log.Info("Running command with args: ", cmd.Args)
 	cmdReader, err := cmd.StdoutPipe()
@@ -120,11 +121,10 @@ func checkFile(log *golog.Logger, url string) error {
 		return nil
 	}
 
-	if err := os.Remove(filepath); err != nil {
-		log.Info("Unable to restart docker containers with new manifest. Invalidating cache.")
+	if err := data.RemoveManifestFile(filepath); err != nil {
 		return err
 	}
-	return errors.New("Unable to update docker containers")
+	return errors.New("Unable to restart docker containers with new manifest. Invalidating cache.")
 }
 
 func getUrls(log *golog.Logger) (error, []string) {
@@ -145,13 +145,21 @@ func checkFiles(log *golog.Logger) {
 		return
 	}
 
+	// Filter away urls without a length
+	urls = slices.Filter(urls, func(url string) bool {
+		return url != ""
+	})
+
 	var wg sync.WaitGroup
 	wg.Add(len(urls))
 
 	for _, url := range urls {
 		u := strings.TrimSpace(url)
+		if u == "" {
+			return
+		}
 		// Run every url request in parallell
-		log.Info("Checking file", url)
+		log.Info("Checking file ", url)
 		go func() {
 			err := checkFile(log, u)
 			if err != nil {

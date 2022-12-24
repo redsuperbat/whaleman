@@ -8,27 +8,37 @@ import (
 	"github.com/kataras/golog"
 )
 
-const (
-	DATA_DIR               = "/var/lib/whaleman"
-	MANIFEST_RESOURCE_FILE = DATA_DIR + "/resources"
-)
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
+func dataDir() string {
+	return getEnv("DATA_DIR", "/var/lib/whaleman")
+}
 
 func toFilePath(filename string) string {
-	return DATA_DIR + "/" + filename
+	return dataDir() + "/" + filename
+}
+
+func manifestResourceFile() string {
+	return dataDir() + "/resources"
 }
 
 func EnsureDataDir(log *golog.Logger) {
-	log.Debug("Ensuring", DATA_DIR, "exists")
-	if err := os.MkdirAll(DATA_DIR, 0700); err != nil {
+	log.Debug("Ensuring", dataDir(), "exists")
+	if err := os.MkdirAll(dataDir(), 0700); err != nil {
 		log.Fatal(err)
 	}
-	log.Debug("Ensuring", MANIFEST_RESOURCE_FILE, "exists")
-	if _, err := os.Stat(MANIFEST_RESOURCE_FILE); err == nil {
+	log.Debug("Ensuring", manifestResourceFile(), "exists")
+	if _, err := os.Stat(manifestResourceFile()); err == nil {
 		return
 	}
 
 	log.Debug("File does not exist initializing an empty one")
-	if err := os.WriteFile(MANIFEST_RESOURCE_FILE, []byte(""), 0644); err != nil {
+	if err := os.WriteFile(manifestResourceFile(), []byte(""), 0644); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -58,20 +68,31 @@ func ReadManifestFile(filename string) (error, []byte) {
 	}
 }
 
+func RemoveManifestFile(filename string) error {
+	filepath := toFilePath(filename)
+	if err := os.Remove(filepath); err != nil {
+		return err
+	}
+	return nil
+}
+
 func WriteManifestResource(url string) error {
-	f, err := os.OpenFile("text.log", os.O_APPEND, 0644)
+	f, err := os.OpenFile(manifestResourceFile(), os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	if _, err := f.WriteString(url + "\n"); err != nil {
+	if _, err = f.WriteString(url + "\n"); err != nil {
+		return err
+	}
+	if err = f.Sync(); err != nil {
 		return err
 	}
 	return nil
 }
 
 func ReadManifestResources() (error, []string) {
-	if b, err := ioutil.ReadFile(MANIFEST_RESOURCE_FILE); err != nil {
+	if b, err := ioutil.ReadFile(manifestResourceFile()); err != nil {
 		return err, nil
 	} else {
 		return nil, strings.Split(string(b), "\n")
