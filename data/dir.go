@@ -28,6 +28,10 @@ func manifestResourceFile() string {
 	return dataDir() + "/resources"
 }
 
+func ManifestFilePath(filename string) string {
+	return toFilePath(filename)
+}
+
 func EnsureDataDir(log *golog.Logger) {
 	log.Debug("Ensuring ", dataDir(), " exists")
 	if err := os.MkdirAll(dataDir(), 0700); err != nil {

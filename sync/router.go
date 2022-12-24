@@ -88,8 +88,8 @@ func checkFile(log *golog.Logger, url string) error {
 	}
 
 	log.Info("Mismatch against local cache. Updating cache.")
-	filepath := toFilename(url)
-	if err = data.WriteManifestFile(filepath, b); err != nil {
+	filename := toFilename(url)
+	if err = data.WriteManifestFile(filename, b); err != nil {
 		return err
 	}
 
@@ -98,6 +98,7 @@ func checkFile(log *golog.Logger, url string) error {
 	faker := gofakeit.New(seed)
 	project := strings.ToLower(faker.Adjective() + "-" + faker.Animal())
 	log.Info("Project ", project, " generated")
+	filepath := data.ManifestFilePath(filename)
 	cmd := exec.Command("docker-compose", "-f", filepath, "-p", project, "up", "-d")
 	log.Info("Running command with args: ", cmd.Args)
 	cmdReader, err := cmd.StdoutPipe()
@@ -120,7 +121,7 @@ func checkFile(log *golog.Logger, url string) error {
 		return nil
 	}
 
-	if err := data.RemoveManifestFile(filepath); err != nil {
+	if err := data.RemoveManifestFile(filename); err != nil {
 		return err
 	}
 	return errors.New("Unable to restart docker containers with new manifest. Invalidating cache.")
