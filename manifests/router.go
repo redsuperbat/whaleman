@@ -26,10 +26,22 @@ func createManifestResource(ctx iris.Context) {
 		ctx.Application().Logger().Error(err)
 		return
 	}
-	ctx.JSON(Msg{Message: "Added resource" + Body.Url})
+	ctx.JSON(Msg{Message: "Added resource: " + Body.Url})
+}
+
+func getManifestResources(ctx iris.Context) {
+	if err, s := data.ReadManifestResources(); err != nil {
+		ctx.StatusCode(500)
+		ctx.JSON(Msg{Message: "Unable to read manifest resources"})
+		ctx.Application().Logger().Error(err)
+	} else {
+		ctx.StatusCode(200)
+		ctx.JSON(s)
+	}
 }
 
 func RegisterManifests(app *iris.Application) {
 	manifestResourcesApi := app.Party("/manifests")
 	manifestResourcesApi.Post("/", createManifestResource)
+	manifestResourcesApi.Get("/", getManifestResources)
 }

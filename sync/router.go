@@ -19,7 +19,6 @@ import (
 	"github.com/kataras/golog"
 	"github.com/kataras/iris/v12"
 	"github.com/redsuperbat/whaleman/data"
-	"github.com/redsuperbat/whaleman/slices"
 )
 
 type Msg struct {
@@ -144,11 +143,6 @@ func checkFiles(log *golog.Logger) {
 		log.Error(err)
 		return
 	}
-
-	// Filter away urls without a length
-	urls = slices.Filter(urls, func(url string) bool {
-		return url != ""
-	})
 
 	var wg sync.WaitGroup
 	wg.Add(len(urls))

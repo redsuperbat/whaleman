@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/kataras/golog"
+	"github.com/redsuperbat/whaleman/slices"
 )
 
 func getEnv(key, fallback string) string {
@@ -96,6 +97,9 @@ func ReadManifestResources() (error, []string) {
 	if b, err := ioutil.ReadFile(manifestResourceFile()); err != nil {
 		return err, nil
 	} else {
-		return nil, strings.Split(string(b), "\n")
+		urls := slices.Filter(strings.Split(string(b), "\n"), func(s string) bool {
+			return s != ""
+		})
+		return nil, urls
 	}
 }
