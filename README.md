@@ -23,7 +23,6 @@ services:
     restart: unless-stopped
     environment:
       - GH_PAT=<personal access token>
-      - GH_COMPOSE_FILES=<comma separated list of compose file urls>
       - POLLING_INTERVAL_MIN=<number of minutes between to poll>
     ports:
       - 8090:8090
