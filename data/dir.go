@@ -28,17 +28,18 @@ func manifestResourceFile() string {
 }
 
 func EnsureDataDir(log *golog.Logger) {
-	log.Debug("Ensuring", dataDir(), "exists")
+	log.Debug("Ensuring ", dataDir(), " exists")
 	if err := os.MkdirAll(dataDir(), 0700); err != nil {
 		log.Fatal(err)
 	}
-	log.Debug("Ensuring", manifestResourceFile(), "exists")
-	if _, err := os.Stat(manifestResourceFile()); err == nil {
+
+	path := manifestResourceFile()
+	log.Debug("Ensuring ", path, " exists")
+	if _, err := os.Stat(path); err == nil {
 		return
 	}
-
-	log.Debug("File does not exist initializing an empty one")
-	if err := os.WriteFile(manifestResourceFile(), []byte(""), 0644); err != nil {
+	log.Debug(path, " does not exist initializing an empty one")
+	if err := os.WriteFile(path, []byte(""), 0644); err != nil {
 		log.Fatal(err)
 	}
 }
