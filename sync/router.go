@@ -112,12 +112,12 @@ func checkFile(log *golog.Logger, url string) error {
 	scanner := bufio.NewScanner(cmdReader)
 	for scanner.Scan() {
 		m := scanner.Text()
-		log.Println(m)
+		log.Info(m)
 	}
 	cmd.Wait()
 
 	if cmd.ProcessState.ExitCode() == 0 {
-		log.Println("Updated docker containers.")
+		log.Info("Updated docker containers")
 		return nil
 	}
 
@@ -131,7 +131,7 @@ func getUrls(log *golog.Logger) (error, []string) {
 	if err, urls := data.ReadManifestResources(); err != nil {
 		return err, nil
 	} else {
-		log.Println("Urls: ", urls)
+		log.Info("Urls: ", urls)
 
 		return nil, urls
 	}
