@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/kataras/golog"
 	"github.com/kataras/iris/v12"
 	"github.com/redsuperbat/whaleman/data"
 	"github.com/redsuperbat/whaleman/manifests"
@@ -13,7 +14,8 @@ func main() {
 	app.Use(iris.Compression)
 
 	// Data
-	data.EnsureDataDir(app.Logger())
+	logger := golog.New()
+	data.EnsureDataDir(logger)
 
 	// Manifest routes
 	manifests.RegisterManifests(app)
