@@ -14,8 +14,7 @@ func main() {
 	app.Use(iris.Compression)
 
 	// Data
-	logger := golog.New()
-	data.EnsureDataDir(logger)
+	data.EnsureDataDir(golog.Default)
 
 	// Manifest routes
 	manifests.RegisterManifests(app)

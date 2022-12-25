@@ -195,5 +195,5 @@ func handleSync(ctx iris.Context) {
 func RegisterSync(app *iris.Application) {
 	syncApi := app.Party("/sync")
 	syncApi.Post("/", handleSync)
-	go startPoll(app.Logger())
+	go startPoll(golog.Default)
 }
