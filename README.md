@@ -45,3 +45,7 @@ curl localhost:8090
 
 Whaleman will then grab the manifest and spin up another instance of itself watching the manifest which was used to create itself with. Neat huh? 🐳
 
+# 🌟 Features to come
+
+- [] Whaleman should not kill itself when changes are made to it's own manifest
+- [] Whaleman should make sure what is defined in the manifests are running in docker.
