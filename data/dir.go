@@ -1,6 +1,7 @@
 package data
 
 import (
+	"net/url"
 	"os"
 	"strings"
 
@@ -23,33 +24,9 @@ func toFilePath(filename string) string {
 	return dataDir() + "/" + filename
 }
 
-func manifestResourceFile() string {
-	return dataDir() + "/resources"
-}
-
-func ensureFile(filepath string) {
-	log := golog.New()
-	if _, err := os.Stat(filepath); err == nil {
-		return
-	}
-	if err := os.WriteFile(filepath, []byte(""), 0644); err != nil {
-		log.Fatal(err)
-	}
-}
-
-func appendToFile(filepath string, content string) error {
-	f, err := os.OpenFile(filepath, os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	if _, err = f.WriteString(content + "\n"); err != nil {
-		return err
-	}
-	if err = f.Sync(); err != nil {
-		return err
-	}
-	return nil
+func isValidUrl(uri string) bool {
+	_, err := url.ParseRequestURI(uri)
+	return err == nil
 }
 
 func ManifestFilePath(filename string) string {
@@ -57,12 +34,10 @@ func ManifestFilePath(filename string) string {
 }
 
 func EnsureDataDir(log *golog.Logger) {
-	log.Info("Ensuring ", dataDir(), " exists")
+	log.Info("Ensuring ", dataDir())
 	if err := os.MkdirAll(dataDir(), 0700); err != nil {
 		log.Fatal(err)
 	}
-	log.Info("Ensuring ", manifestResourceFile())
-	ensureFile(manifestResourceFile())
 }
 
 func WriteManifestFile(filename string, content []byte) error {
@@ -88,17 +63,13 @@ func RemoveManifestFile(filename string) error {
 	return os.Remove(filepath)
 }
 
-func WriteManifestResource(url string) error {
-	return appendToFile(manifestResourceFile(), url)
-}
-
-func ReadManifestResources() ([]string, error) {
-	if b, err := os.ReadFile(manifestResourceFile()); err != nil {
-		return nil, err
-	} else {
-		urls := slices.Filter(strings.Split(string(b), "\n"), func(s string) bool {
-			return s != ""
-		})
-		return urls, nil
-	}
+func ReadManifestResources() []string {
+	urls := strings.Split(os.Getenv("COMPOSE_FILE_RESOURCES"), "\n")
+	// remove invalid whitespace
+	urls = slices.Map(urls, func(s string) string {
+		return strings.TrimSpace(s)
+	})
+	return slices.Filter(urls, func(s string) bool {
+		return isValidUrl(s)
+	})
 }

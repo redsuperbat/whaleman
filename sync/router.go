@@ -143,23 +143,17 @@ func checkFile(log *golog.Logger, url string) error {
 	return nil
 }
 
-func checkFiles(log *golog.Logger) {
-	urls, err := data.ReadManifestResources()
-
-	if err != nil {
-		log.Error(err)
-		return
-	}
-
+func checkFiles() {
+	urls := data.ReadManifestResources()
 	var wg sync.WaitGroup
 	wg.Add(len(urls))
 
 	for _, url := range urls {
-		u := strings.TrimSpace(url)
-		// Run every url request in parallell
-		log.Info("Checking file ", url)
+		log := golog.New()
+		log.SetPrefix(fmt.Sprintf("[%s] ", url))
+		url := url
 		go func() {
-			err := checkFile(log, u)
+			err := checkFile(log, url)
 			if err != nil {
 				log.Error(err)
 			}
@@ -183,12 +177,12 @@ func startPoll(log *golog.Logger) {
 
 	ticker := time.NewTicker(time.Minute * time.Duration(interval))
 	for range ticker.C {
-		checkFiles(log)
+		checkFiles()
 	}
 }
 
 func handleSync(ctx iris.Context) {
-	checkFiles(ctx.Application().Logger())
+	checkFiles()
 	ctx.JSON(Msg{Message: "Successfully synced!"})
 }
 

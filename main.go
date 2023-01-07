@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/kataras/iris/v12"
 	"github.com/redsuperbat/whaleman/data"
-	"github.com/redsuperbat/whaleman/manifests"
 	"github.com/redsuperbat/whaleman/sync"
 )
 
@@ -14,9 +13,6 @@ func main() {
 
 	// Data
 	data.EnsureDataDir(app.Logger())
-
-	// Manifest routes
-	manifests.RegisterManifests(app)
 
 	// Sync routes
 	sync.RegisterSync(app)
