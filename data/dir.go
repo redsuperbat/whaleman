@@ -64,7 +64,7 @@ func RemoveManifestFile(filename string) error {
 }
 
 func ReadManifestResources() []string {
-	urls := strings.Split(os.Getenv("COMPOSE_FILE_RESOURCES"), "\n")
+	urls := strings.Split(os.Getenv("COMPOSE_FILE_RESOURCES"), ",")
 	// remove invalid whitespace
 	urls = slices.Map(urls, func(s string) string {
 		return strings.TrimSpace(s)

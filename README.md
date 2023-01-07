@@ -23,7 +23,7 @@ services:
     restart: unless-stopped
     environment:
       - COMPOSE_FILE_RESOURCES= >-
-          <url to compose file 1>
+          <url to compose file 1>,
           <url to compose file 2>
       - POLLING_INTERVAL_MIN=<number of minutes between to poll>
       # Optional GH_PAT if you host your compose files in github
@@ -39,7 +39,7 @@ services:
 Grab the raw url for the whaleman compose file and run an instance of Whaleman with the Whaleman compose file as the target.
 
 ```shell
-docker run -e GH_PAT=<pat> -e GH_COMPOSE_FILES=<url to docker-compose whaleman manifest> -p 8090:8090 --name prewhale maxrsb/whaleman
+docker run -e GH_PAT=<pat> -e GH_COMPOSE_FILES=<url to docker-compose whaleman manifest> -p 8090:8090 -v /var/run/docker.sock:/var/run/docker.sock -v /home/usr/whaleman:/var/lib/whaleman maxrsb/whaleman
 ```
 
 Then curl whaleman so it syncs once
@@ -49,6 +49,20 @@ curl localhost:8090
 ```
 
 Whaleman will then grab the manifest and spin up another instance of itself watching the manifest which was used to create itself with. Neat huh? 🐳
+
+## Environment variables
+
+**COMPOSE_FILE_RESOURCES**
+
+A comma separated list of urls which resolve to docker-compose manifests
+
+**POLLING_INTERVAL_MIN (optional)**
+
+A number specifying the number of minutes between polling the urls for changes. Default behavior is no polling.
+
+**GH_PAT (optional)**
+
+A personal access token so Whaleman can read manifests hosted in a private github repo.
 
 ## 🌟 Upcoming features
 
