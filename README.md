@@ -3,12 +3,12 @@
 </p>
 
 
-## Description 🐬
+## 🐬 Description 
 Whaleman subscribes to a number of docker-compose files in a github repo and automagically update the docker containers running when the docker-compose files change. It adheres to the gitops way, by providing an easy way to manage your docker-compose files in github.
 
 Whaleman is ment to manage itself as well as any number of docker image on a node. It's useful if you have a server at home and just want the server to update the docker cluster when the docker-compose images change.
 
-## Setup 🛥️
+## 🛥️ Setup 
 
 Whaleman can be run as a binary or as a docker image. Since it's ment to be used in conjunction with docker-compose the suggested way to run Whaleman is with docker-compose in a github repo.
 
@@ -45,7 +45,7 @@ curl localhost:8090
 
 Whaleman will then grab the manifest and spin up another instance of itself watching the manifest which was used to create itself with. Neat huh? 🐳
 
-# 🌟 Features to come
+## 🌟 Upcoming features
 
 - [ ] Whaleman should not kill itself when changes are made to it's own manifest.
 - [ ] Whaleman should make sure what is defined in the manifests are running in docker.
