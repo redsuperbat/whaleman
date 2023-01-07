@@ -6,6 +6,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -67,40 +68,18 @@ func toFilename(url string) string {
 	return toMD5Hash(url)
 }
 
-func readCache(url string) []byte {
+func readCache(url string) ([]byte, error) {
 	filename := toFilename(url)
-	if err, b := data.ReadManifestFile(filename); err != nil {
-		return []byte("")
-	} else {
-		return b
-	}
+	return data.ReadManifestFile(filename)
 }
 
-func checkFile(log *golog.Logger, url string) error {
-	b, err := downloadGithubFile(url)
-	if err != nil {
-		return err
-	}
-	b2 := readCache(url)
-	if filesEqual(&b, &b2) {
-		log.Info("Remote files match local cache.")
-		return nil
-	}
-
-	log.Info("Mismatch against local cache. Updating cache.")
-	filename := toFilename(url)
-	if err = data.WriteManifestFile(filename, b); err != nil {
-		return err
-	}
-
-	log.Info("Trying to restart docker applications")
-	seed := sumChars(toMD5Hash(url))
+func getProjectNameFromHash(hash string) string {
+	seed := sumChars(hash)
 	faker := gofakeit.New(seed)
-	project := strings.ToLower(faker.Adjective() + "-" + faker.Animal())
-	log.Info("Project ", project, " generated")
-	filepath := data.ManifestFilePath(filename)
-	cmd := exec.Command("docker-compose", "-f", filepath, "-p", project, "up", "-d")
-	log.Info("Running command with args: ", cmd.Args)
+	return strings.ToLower(faker.Adjective() + "-" + faker.Animal())
+}
+
+func startAndPipeLogs(cmd *exec.Cmd, log *golog.Logger) error {
 	cmdReader, err := cmd.StdoutPipe()
 	cmd.Stderr = cmd.Stdout
 	if err != nil {
@@ -109,36 +88,79 @@ func checkFile(log *golog.Logger, url string) error {
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	scanner := bufio.NewScanner(cmdReader)
+	startScanner(cmdReader, log.Info)
+	return nil
+}
+
+func startScanner(reader io.ReadCloser, fn func(...interface{})) {
+	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
 		m := scanner.Text()
-		log.Info(m)
+		fn(m)
+	}
+}
+
+func restartDockerContainers(filename string, log *golog.Logger) error {
+	project := getProjectNameFromHash(filename)
+	filepath := data.ManifestFilePath(filename)
+	cmd := exec.Command("docker-compose", "-f", filepath, "-p", project, "up", "-d")
+	log.Info("cmd: ", cmd.Args)
+	if err := startAndPipeLogs(cmd, log); err != nil {
+		return err
 	}
 	cmd.Wait()
 
-	if cmd.ProcessState.ExitCode() == 0 {
-		log.Info("Updated docker containers")
+	exitCode := cmd.ProcessState.ExitCode()
+
+	if exitCode == 1 {
+		errMsg := fmt.Sprintf("unable to restart docker containers with manifest %s project %s", filepath, project)
+		return errors.New(errMsg)
+	}
+
+	return nil
+}
+
+func checkFile(log *golog.Logger, url string) error {
+	b, err := downloadGithubFile(url)
+	if err != nil {
+		return err
+	}
+
+	b2, err := readCache(url)
+	// The case can be that the cached file does not exist yet.
+	if err != nil {
+		log.Info(err)
+		b2 = []byte("")
+	}
+
+	if filesEqual(&b, &b2) {
+		log.Info("Remote files match local cache")
 		return nil
 	}
 
-	if err := data.RemoveManifestFile(filename); err != nil {
+	log.Info("Mismatch against local cache")
+	// Filename is just an MD5 hash of the manifest resource
+	filename := toMD5Hash(url)
+
+	log.Info("Updating local cache")
+	if err = data.WriteManifestFile(filename, b); err != nil {
 		return err
 	}
-	return errors.New("Unable to restart docker containers with new manifest. Invalidating cache.")
-}
 
-func getUrls(log *golog.Logger) (error, []string) {
-	if err, urls := data.ReadManifestResources(); err != nil {
-		return err, nil
-	} else {
-		log.Info("Urls: ", urls)
+	log.Info("Restarting docker apps")
+	err = restartDockerContainers(filename, log)
 
-		return nil, urls
+	if err != nil {
+		log.Error(err)
+		log.Info("Invalidating invalid manifest cache")
+		return data.RemoveManifestFile(filename)
 	}
+
+	return nil
 }
 
 func checkFiles(log *golog.Logger) {
-	err, urls := getUrls(log)
+	urls, err := data.ReadManifestResources()
 
 	if err != nil {
 		log.Error(err)
@@ -150,9 +172,6 @@ func checkFiles(log *golog.Logger) {
 
 	for _, url := range urls {
 		u := strings.TrimSpace(url)
-		if u == "" {
-			return
-		}
 		// Run every url request in parallell
 		log.Info("Checking file ", url)
 		go func() {
@@ -168,22 +187,19 @@ func checkFiles(log *golog.Logger) {
 func startPoll(log *golog.Logger) {
 	pollInterval := os.Getenv("POLLING_INTERVAL_MIN")
 	if pollInterval == "" {
-		log.Debug("Polling disabled")
+		log.Info("Polling disabled")
 		return
 	}
 
-	log.Debug("Polling enabled polling every", pollInterval, "minutes")
+	log.Info("Polling enabled polling every", pollInterval, "minutes")
 	interval, err := strconv.Atoi(pollInterval)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	ticker := time.NewTicker(time.Minute * time.Duration(interval))
-	for {
-		select {
-		case <-ticker.C:
-			checkFiles(log)
-		}
+	for range ticker.C {
+		checkFiles(log)
 	}
 }
 

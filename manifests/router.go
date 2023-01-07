@@ -31,9 +31,9 @@ func createManifestResource(ctx iris.Context) {
 
 func getManifestResources(ctx iris.Context) {
 	if err, s := data.ReadManifestResources(); err != nil {
+		ctx.Application().Logger().Error(err)
 		ctx.StatusCode(500)
 		ctx.JSON(Msg{Message: "Unable to read manifest resources"})
-		ctx.Application().Logger().Error(err)
 	} else {
 		ctx.StatusCode(200)
 		ctx.JSON(s)

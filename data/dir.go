@@ -1,7 +1,6 @@
 package data
 
 import (
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -51,10 +50,7 @@ func EnsureDataDir(log *golog.Logger) {
 
 func WriteManifestFile(filename string, content []byte) error {
 	filepath := toFilePath(filename)
-	if err := ioutil.WriteFile(filepath, content, 0644); err != nil {
-		return err
-	}
-	return nil
+	return os.WriteFile(filepath, content, 0644)
 }
 
 func ManifestFileExists(filename string) bool {
@@ -65,21 +61,14 @@ func ManifestFileExists(filename string) bool {
 	return true
 }
 
-func ReadManifestFile(filename string) (error, []byte) {
+func ReadManifestFile(filename string) ([]byte, error) {
 	filepath := toFilePath(filename)
-	if b, err := ioutil.ReadFile(filepath); err != nil {
-		return err, nil
-	} else {
-		return nil, b
-	}
+	return os.ReadFile(filepath)
 }
 
 func RemoveManifestFile(filename string) error {
 	filepath := toFilePath(filename)
-	if err := os.Remove(filepath); err != nil {
-		return err
-	}
-	return nil
+	return os.Remove(filepath)
 }
 
 func WriteManifestResource(url string) error {
@@ -97,13 +86,13 @@ func WriteManifestResource(url string) error {
 	return nil
 }
 
-func ReadManifestResources() (error, []string) {
-	if b, err := ioutil.ReadFile(manifestResourceFile()); err != nil {
-		return err, nil
+func ReadManifestResources() ([]string, error) {
+	if b, err := os.ReadFile(manifestResourceFile()); err != nil {
+		return nil, err
 	} else {
 		urls := slices.Filter(strings.Split(string(b), "\n"), func(s string) bool {
 			return s != ""
 		})
-		return nil, urls
+		return urls, nil
 	}
 }
