@@ -22,8 +22,13 @@ services:
     image: maxrsb/whaleman:latest
     restart: unless-stopped
     environment:
-      - GH_PAT=<personal access token>
+      - COMPOSE_FILE_RESOURCES= >-
+          <url to compose file 1>
+          <url to compose file 2>
       - POLLING_INTERVAL_MIN=<number of minutes between to poll>
+      # Optional GH_PAT if you host your compose files in github
+      # Whaleman can pull files from any resource so the PAT is not needed
+      - GH_PAT=<personal access token>
     ports:
       - 8090:8090
     volumes:

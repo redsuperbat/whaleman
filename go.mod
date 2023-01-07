@@ -6,6 +6,7 @@ require (
 	github.com/brianvoe/gofakeit/v6 v6.20.1
 	github.com/kataras/golog v0.1.8
 	github.com/kataras/iris/v12 v12.2.0-beta7
+	github.com/matoous/go-nanoid/v2 v2.0.0
 	github.com/stretchr/testify v1.8.1
 )
 

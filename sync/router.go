@@ -1,16 +1,13 @@
 package sync
 
 import (
-	"bufio"
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 	"sync"
@@ -19,7 +16,9 @@ import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/kataras/golog"
 	"github.com/kataras/iris/v12"
+	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/redsuperbat/whaleman/data"
+	"github.com/redsuperbat/whaleman/docker"
 )
 
 type Msg struct {
@@ -79,61 +78,6 @@ func getProjectNameFromHash(hash string) string {
 	return strings.ToLower(faker.Adjective() + "-" + faker.Animal())
 }
 
-func startAndPipeLogs(cmd *exec.Cmd, log *golog.Logger) error {
-	cmdReader, err := cmd.StdoutPipe()
-	cmd.Stderr = cmd.Stdout
-	if err != nil {
-		return err
-	}
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-	startScanner(cmdReader, log.Info)
-	return nil
-}
-
-func startScanner(reader io.ReadCloser, fn func(...interface{})) {
-	scanner := bufio.NewScanner(reader)
-	for scanner.Scan() {
-		m := scanner.Text()
-		fn(m)
-	}
-}
-
-func runCommand(log *golog.Logger, name string, arg ...string) error {
-	cmd := exec.Command(name, arg...)
-	if err := startAndPipeLogs(cmd, log); err != nil {
-		return err
-	}
-	cmd.Wait()
-
-	if cmd.ProcessState.ExitCode() == 1 {
-		errMsg := fmt.Sprintf("unable to run command %v", cmd.Args)
-		return errors.New(errMsg)
-	}
-
-	return nil
-}
-
-func restartDockerContainers(filename string) error {
-	project := getProjectNameFromHash(filename)
-	filepath := data.ManifestFilePath(filename)
-	log := golog.New()
-	log.SetPrefix(fmt.Sprintf("[%s] ", project))
-
-	if err := runCommand(log, "docker-compose", "-f", filepath, "-p", project, "create"); err != nil {
-		errMsg := fmt.Sprintf("unable to restart docker containers with manifest %s project %s", filepath, project)
-		log.Error(errMsg)
-		return err
-	}
-
-	if err := runCommand(log, "docker-compose", "-f", filepath, "-p", project, "start"); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func checkFile(log *golog.Logger, url string) error {
 	b, err := downloadGithubFile(url)
 	if err != nil {
@@ -153,21 +97,47 @@ func checkFile(log *golog.Logger, url string) error {
 	}
 
 	log.Info("Mismatch against local cache")
+	nonce, err := gonanoid.New(8)
+	if err != nil {
+		return err
+	}
 	// Filename is just an MD5 hash of the manifest resource
 	filename := toMD5Hash(url)
+	tmpFilename := filename + "tmp"
 
-	log.Info("Updating local cache")
+	// Create a tmp file in case the deploy fails
+	log.Info("Creating tmp compose file")
+	if err = data.WriteManifestFile(tmpFilename, b); err != nil {
+		return err
+	}
+	projectPrefix := getProjectNameFromHash(tmpFilename)
+	newProjectName := projectPrefix + fmt.Sprintf("-%s", strings.ToLower(nonce))
+	log.Info("Attempting redeploy")
+	err = docker.StartComposeProject(tmpFilename, newProjectName)
+
+	if err != nil {
+		log.Error(err)
+		return data.RemoveManifestFile(tmpFilename)
+	}
+
+	project, err := docker.GetOldProjectByPrefix(projectPrefix, newProjectName)
+	if err != nil {
+		log.Error(err)
+		return data.RemoveManifestFile(tmpFilename)
+	}
+
+	if err = docker.RemoveComposeProject(filename, project.Name); err != nil {
+		log.Error(err)
+		return data.RemoveManifestFile(tmpFilename)
+	}
+
+	log.Info("Redeploy succeeded cleaning up...")
 	if err = data.WriteManifestFile(filename, b); err != nil {
 		return err
 	}
 
-	log.Info("Restarting docker apps")
-	err = restartDockerContainers(filename)
-
-	if err != nil {
-		log.Error(err)
-		log.Info("Invalidating invalid manifest cache")
-		return data.RemoveManifestFile(filename)
+	if err = data.RemoveManifestFile(tmpFilename); err != nil {
+		return err
 	}
 
 	return nil
