@@ -100,21 +100,35 @@ func startScanner(reader io.ReadCloser, fn func(...interface{})) {
 	}
 }
 
-func restartDockerContainers(filename string, log *golog.Logger) error {
-	project := getProjectNameFromHash(filename)
-	filepath := data.ManifestFilePath(filename)
-	cmd := exec.Command("docker-compose", "-f", filepath, "-p", project, "up", "-d")
-	log.Info("cmd: ", cmd.Args)
+func runCommand(log *golog.Logger, name string, arg ...string) error {
+	cmd := exec.Command(name, arg...)
 	if err := startAndPipeLogs(cmd, log); err != nil {
 		return err
 	}
 	cmd.Wait()
 
-	exitCode := cmd.ProcessState.ExitCode()
-
-	if exitCode == 1 {
-		errMsg := fmt.Sprintf("unable to restart docker containers with manifest %s project %s", filepath, project)
+	if cmd.ProcessState.ExitCode() == 1 {
+		errMsg := fmt.Sprintf("unable to run command %v", cmd.Args)
 		return errors.New(errMsg)
+	}
+
+	return nil
+}
+
+func restartDockerContainers(filename string) error {
+	project := getProjectNameFromHash(filename)
+	filepath := data.ManifestFilePath(filename)
+	log := golog.New()
+	log.SetPrefix(fmt.Sprintf("[%s] ", project))
+
+	if err := runCommand(log, "docker-compose", "-f", filepath, "-p", project, "create"); err != nil {
+		errMsg := fmt.Sprintf("unable to restart docker containers with manifest %s project %s", filepath, project)
+		log.Error(errMsg)
+		return err
+	}
+
+	if err := runCommand(log, "docker-compose", "-f", filepath, "-p", project, "start"); err != nil {
+		return err
 	}
 
 	return nil
@@ -148,7 +162,7 @@ func checkFile(log *golog.Logger, url string) error {
 	}
 
 	log.Info("Restarting docker apps")
-	err = restartDockerContainers(filename, log)
+	err = restartDockerContainers(filename)
 
 	if err != nil {
 		log.Error(err)

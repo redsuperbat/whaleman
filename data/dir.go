@@ -1,7 +1,11 @@
 package data
 
 import (
+	"bufio"
+	"errors"
+	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/kataras/golog"
@@ -27,25 +31,80 @@ func manifestResourceFile() string {
 	return dataDir() + "/resources"
 }
 
+func manifestVersionFile() string {
+	return dataDir() + "/versions"
+}
+
+func ensureFile(filepath string) {
+	log := golog.New()
+	if _, err := os.Stat(filepath); err == nil {
+		return
+	}
+	if err := os.WriteFile(filepath, []byte(""), 0644); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func IncrementManifestVersion(filename string) error {
+	currentVersion := GetManifestVersion(filename)
+	filepath := manifestVersionFile()
+	if currentVersion == -1 {
+		return errors.New("file does not exist")
+	}
+	input, err := os.ReadFile(filepath)
+	if err != nil {
+		return err
+	}
+
+	lines := strings.Split(string(input), "\n")
+
+	for i, line := range lines {
+		if strings.HasPrefix(line, filename) {
+			lines[i] = filename + fmt.Sprintf("%v", currentVersion+1)
+		}
+	}
+	output := strings.Join(lines, "\n")
+	err = os.WriteFile(filepath, []byte(output), 0644)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetManifestVersion(filename string) int {
+	filepath := manifestVersionFile()
+	reader, err := os.Open(filepath)
+	if err != nil {
+		return -1
+	}
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if !strings.HasPrefix(line, filename) {
+			continue
+		}
+		if i, err := strconv.Atoi(line[len(filename):]); err != nil {
+			return -1
+		} else {
+			return i
+		}
+	}
+	return -1
+}
+
 func ManifestFilePath(filename string) string {
 	return toFilePath(filename)
 }
 
 func EnsureDataDir(log *golog.Logger) {
-	log.Debug("Ensuring ", dataDir(), " exists")
+	log.Info("Ensuring ", dataDir(), " exists")
 	if err := os.MkdirAll(dataDir(), 0700); err != nil {
 		log.Fatal(err)
 	}
-
-	path := manifestResourceFile()
-	log.Debug("Ensuring ", path, " exists")
-	if _, err := os.Stat(path); err == nil {
-		return
-	}
-	log.Debug(path, " does not exist initializing an empty one")
-	if err := os.WriteFile(path, []byte(""), 0644); err != nil {
-		log.Fatal(err)
-	}
+	log.Info("Ensuring ", manifestResourceFile())
+	ensureFile(manifestResourceFile())
+	log.Info("Ensuring ", manifestVersionFile())
+	ensureFile(manifestVersionFile())
 }
 
 func WriteManifestFile(filename string, content []byte) error {
