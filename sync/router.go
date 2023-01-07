@@ -16,7 +16,6 @@ import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/kataras/golog"
 	"github.com/kataras/iris/v12"
-	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/redsuperbat/whaleman/data"
 	"github.com/redsuperbat/whaleman/docker"
 )
@@ -97,10 +96,6 @@ func checkFile(log *golog.Logger, url string) error {
 	}
 
 	log.Info("Mismatch against local cache")
-	nonce, err := gonanoid.New(8)
-	if err != nil {
-		return err
-	}
 	// Filename is just an MD5 hash of the manifest resource
 	filename := toMD5Hash(url)
 	tmpFilename := filename + "tmp"
@@ -110,23 +105,11 @@ func checkFile(log *golog.Logger, url string) error {
 	if err = data.WriteManifestFile(tmpFilename, b); err != nil {
 		return err
 	}
-	projectPrefix := getProjectNameFromHash(tmpFilename)
-	newProjectName := projectPrefix + fmt.Sprintf("-%s", strings.ToLower(nonce))
+	project := getProjectNameFromHash(tmpFilename)
 	log.Info("Attempting redeploy")
-	err = docker.StartComposeProject(tmpFilename, newProjectName)
+	err = docker.StartComposeProject(tmpFilename, project)
 
 	if err != nil {
-		log.Error(err)
-		return data.RemoveManifestFile(tmpFilename)
-	}
-
-	project, err := docker.GetOldProjectByPrefix(projectPrefix, newProjectName)
-	if err != nil {
-		log.Error(err)
-		return data.RemoveManifestFile(tmpFilename)
-	}
-
-	if err = docker.RemoveComposeProject(filename, project.Name); err != nil {
 		log.Error(err)
 		return data.RemoveManifestFile(tmpFilename)
 	}

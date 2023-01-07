@@ -2,16 +2,13 @@ package docker
 
 import (
 	"bufio"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os/exec"
-	"strings"
 
 	"github.com/kataras/golog"
 	"github.com/redsuperbat/whaleman/data"
-	"github.com/redsuperbat/whaleman/slices"
 )
 
 func startAndPipeLogs(cmd *exec.Cmd, log *golog.Logger) error {
@@ -81,20 +78,4 @@ type Project struct {
 	Name        string
 	Status      string
 	ConfigFiles string
-}
-
-func GetOldProjectByPrefix(projectPrefix string, newProject string) (*Project, error) {
-	cmd := exec.Command("docker-compose", "ls", "-a", "--format=json")
-	stdout, err := cmd.Output()
-	if err != nil {
-		return nil, err
-	}
-	projects := []Project{}
-	if err := json.Unmarshal(stdout, &projects); err != nil {
-		return nil, err
-	}
-
-	return slices.Find(projects, func(p Project) bool {
-		return strings.HasPrefix(p.Name, projectPrefix) && p.Name != newProject
-	})
 }
