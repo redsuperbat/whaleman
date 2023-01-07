@@ -52,15 +52,15 @@ Whaleman will then grab the manifest and spin up another instance of itself watc
 
 ## Environment variables
 
-**COMPOSE_FILE_RESOURCES**
+**`COMPOSE_FILE_RESOURCES`**
 
 A comma separated list of urls which resolve to docker-compose manifests
 
-**POLLING_INTERVAL_MIN (optional)**
+**`POLLING_INTERVAL_MIN` (optional)**
 
 A number specifying the number of minutes between polling the urls for changes. Default behavior is no polling.
 
-**GH_PAT (optional)**
+**`GH_PAT` (optional)**
 
 A personal access token so Whaleman can read manifests hosted in a private github repo.
 
