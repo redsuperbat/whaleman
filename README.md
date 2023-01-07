@@ -53,5 +53,5 @@ Whaleman will then grab the manifest and spin up another instance of itself watc
 ## 🌟 Upcoming features
 
 The few things on my roadmap:
-- [ ] Whaleman should not kill itself when changes are made to it's own manifest.
+- [x] Whaleman should not kill itself before restarting when changes are made to it's own manifest.
 - [ ] Whaleman should make sure what is defined in the manifests are running in docker.
